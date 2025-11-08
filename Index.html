@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chat | Scholarly Deep Ocean (Live)</title>
+    <!-- ... (all <style> and <link> tags are identical to the previous file) ... -->
+    <style>
+        :root {
+            --bg-primary: #0F1A2E;
+            --bg-secondary: #1B2B47;
+            --bg-accent: #1B2B47;
+            --text-primary: #E0E5F1;
+            --text-secondary: #aab4c3;
+            --text-inverse: #0F1A2E;
+            --accent-primary: #E1A43C;
+            --accent-primary-hover: #f0b95f;
+            --border-color: #2a3f6a;
+            --error-bg: #4d2a2a;
+            --error-border: #e13c3c;
+            --error-text: #f1e0e0;
+            --font-heading: 'Lora', serif;
+            --font-body: 'Inter', sans-serif;
+        }
+        /* ... (all other styles are identical) ... */
+        body { font-family: var(--font-body); background-color: var(--bg-primary); color: var(--text-primary); }
+        h1, h2, h3, h4, h5, h6 { font-family: var(--font-heading); font-weight: 500; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-primary); }
+        ::-webkit-scrollbar-thumb { background: var(--bg-secondary); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--border-color); }
+        ::selection { background-color: var(--accent-primary); color: var(--text-inverse); }
+        .markdown-content ul, .markdown-content ol { list-style-position: inside; margin-left: 1rem; margin-top: 0.5rem; margin-bottom: 0.5rem; }
+        .markdown-content ul { list-style-type: disc; }
+        .markdown-content ol { list-style-type: decimal; }
+        .markdown-content p { margin-bottom: 0.5rem; }
+        .markdown-content strong { font-weight: 600; }
+        .markdown-content em { font-style: italic; }
+        .flashcard { perspective: 1000px; }
+        .flashcard-inner { position: relative; width: 100%; height: 100%; transition: transform 0.6s; transform-style: preserve-3d; }
+        .flashcard.is-flipped .flashcard-inner { transform: rotateY(180deg); }
+        .flashcard-front, .flashcard-back { position: absolute; width: 100%; height: 100%; -webkit-backface-visibility: hidden; backface-visibility: hidden; display: flex; flex-direction: column; justify-content: space-between; padding: 1rem; border-radius: 0.5rem; border: 1px solid var(--border-color); background-color: var(--bg-secondary); }
+        .flashcard-back { transform: rotateY(180deg); }
+    </style>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Lora:wght@400;500;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'], serif: ['Lora', 'serif'] },
+                    colors: {
+                        'theme-primary': 'var(--bg-primary)',
+                        'theme-secondary': 'var(--bg-secondary)',
+                        'theme-accent': 'var(--bg-accent)',
+                        'theme-text-primary': 'var(--text-primary)',
+                        'theme-text-secondary': 'var(--text-secondary)',
+                        'theme-text-inverse': 'var(--text-inverse)',
+                        'theme-accent-primary': 'var(--accent-primary)',
+                        'theme-accent-primary-hover': 'var(--accent-primary-hover)',
+                        'theme-border': 'var(--border-color)',
+                        'theme-error-bg': 'var(--error-bg)',
+                        'theme-error-border': 'var(--error-border)',
+                        'theme-error-text': 'var(--error-text)',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-theme-primary text-theme-text-primary antialiased">
+
+    <!-- ... (All HTML for the layout is identical to the previous file) ... -->
+    <div id="app" class="flex h-screen w-full relative overflow-hidden">
+        
+        <!-- Sidebar -->
+        <aside id="sidebar" class="bg-theme-accent w-64 h-full flex flex-col p-4 border-r border-theme-border transition-transform duration-300 ease-in-out -translate-x-full md:translate-x-0 fixed md:static z-20">
+            <!-- ... (Sidebar HTML is identical) ... -->
+             <div class="flex items-center justify-between mb-6">
+                <button id="new-chat-btn" class="flex items-center justify-center gap-2 w-full bg-theme-accent-primary text-theme-text-inverse font-medium py-2 px-4 rounded-lg hover:bg-theme-accent-primary-hover transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                    New Chat
+                </button>
+                <button id="close-menu-btn" class="md:hidden text-theme-text-secondary hover:text-theme-text-primary">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <button id="trigger-error-btn" class="flex items-center justify-center gap-2 w-full bg-theme-error-bg text-theme-error-text font-medium py-2 px-4 rounded-lg hover:bg-theme-error-border transition-colors mb-4 text-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12l-4-4-4 4m0-4v16"></path></svg>
+                Trigger Error
+            </button>
+            <h2 class="text-xs font-semibold text-theme-text-secondary uppercase tracking-wider mb-2">History</h2>
+            <div id="chat-history" class="flex-1 overflow-y-auto pr-2">
+                <p class="text-sm text-theme-text-secondary">No chats yet.</p>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 h-full flex flex-col">
+            <!-- ... (Main Content HTML is identical) ... -->
+             <header class="md:hidden flex items-center justify-between p-4 border-b border-theme-border">
+                <button id="open-menu-btn">
+                    <svg class="w-6 h-6 text-theme-text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+                </button>
+                <h1 id="mobile-chat-title" class="text-lg font-semibold truncate">New Chat</h1>
+            </header>
+            <div id="content-area" class="flex-1 flex flex-col h-full overflow-hidden">
+                <div id="course-prompt" class="flex-1 flex flex-col items-center justify-center p-6 h-full text-center">
+                    <div class="max-w-md w-full">
+                        <h1 class="text-3xl font-serif mb-4">What course is this for?</h1>
+                        <p class="text-theme-text-secondary mb-6">Please provide a course name so I can better assist you.</p>
+                        <div class="flex flex-col gap-4">
+                            <input id="course-name-input" type="text" placeholder="e.g., 'CHEM 202' or 'Intro to Python'" class="w-full px-4 py-3 rounded-lg bg-theme-secondary border border-theme-border focus:outline-none focus:ring-2 focus:ring-theme-accent-primary text-theme-text-primary placeholder-theme-text-secondary">
+                            <button id="start-chat-btn" class="w-full bg-theme-accent-primary text-theme-text-inverse font-medium py-3 px-6 rounded-lg hover:bg-theme-accent-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                                Start Chat
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div id="chat-interface" class="flex-1 flex-col h-full overflow-hidden hidden">
+                    <div class="p-4 border-b border-theme-border">
+                        <h2 id="chat-title" class="text-xl font-semibold text-center md:text-left">Biology 101</h2>
+                    </div>
+                    <div id="message-list" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
+                    </div>
+                    <div class="p-4 md:p-6 border-t border-theme-border">
+                        <form id="chat-form" class="flex items-center gap-3">
+                            <input id="chat-input" type="text" placeholder="Ask a question..." class="flex-1 px-4 py-3 rounded-lg bg-theme-secondary border border-theme-border focus:outline-none focus:ring-2 focus:ring-theme-accent-primary text-theme-text-primary placeholder-theme-text-secondary disabled:opacity-50" autocomplete="off">
+                            <button id="send-btn" type="submit" class="p-3 bg-theme-accent-primary text-theme-text-inverse rounded-lg hover:bg-theme-accent-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009.175 17V4.697l-6.364 2.122L10.894 2.553zM10.175 17V4.697l6.364 2.122L10.175 17z"></path></svg>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- STATE ---
+            const state = {
+                currentChatId: null,
+                chatHistory: [], // { id, courseName, messages: [] }
+                errorIndex: 0,
+                isThinking: false,
+                errorMessages: [
+                    "Connection failed. It's not you, it's me... and a server I couldn't reach. Let's try again.",
+                    "That... did not work. Second time's the charm? (Please say yes.)",
+                    "The hamster running the server just fell off its wheel. Can you give it another spin?"
+                ],
+                
+                // --- REMOVED ---
+                // The `testResponses` array is no longer needed as we'll be fetching live data.
+                // testResponses: [ ... ]
+            };
+
+            // --- DOM ELEMENTS ---
+            // ... (All DOM elements are identical) ...
+            const sidebar = document.getElementById('sidebar');
+            const openMenuBtn = document.getElementById('open-menu-btn');
+            const closeMenuBtn = document.getElementById('close-menu-btn');
+            const newChatBtn = document.getElementById('new-chat-btn');
+            const triggerErrorBtn = document.getElementById('trigger-error-btn');
+            const chatHistoryEl = document.getElementById('chat-history');
+            const contentArea = document.getElementById('content-area');
+            const coursePrompt = document.getElementById('course-prompt');
+            const courseNameInput = document.getElementById('course-name-input');
+            const startChatBtn = document.getElementById('start-chat-btn');
+            const chatInterface = document.getElementById('chat-interface');
+            const chatTitle = document.getElementById('chat-title');
+            const mobileChatTitle = document.getElementById('mobile-chat-title');
+            const messageList = document.getElementById('message-list');
+            const chatForm = document.getElementById('chat-form');
+            const chatInput = document.getElementById('chat-input');
+            const sendBtn = document.getElementById('send-btn');
+
+            // --- FUNCTIONS ---
+
+            // --- UI & State Functions ---
+            // ... (toggleSidebar, updateChatHistoryUI, showView, setThinking, scrollToBottom are identical) ...
+            function toggleSidebar(show) {
+                if (show) { sidebar.classList.remove('-translate-x-full'); } 
+                else { sidebar.classList.add('-translate-x-full'); }
+            }
+            function updateChatHistoryUI() {
+                if (state.chatHistory.length === 0) {
+                    chatHistoryEl.innerHTML = '<p class="text-sm text-theme-text-secondary">No chats yet.</p>';
+                    return;
+                }
+                chatHistoryEl.innerHTML = state.chatHistory.map(chat => `
+                    <button class="block w-full text-left px-3 py-2 rounded-lg text-theme-text-primary hover:bg-theme-secondary truncate text-sm" data-chat-id="${chat.id}">
+                        ${chat.courseName}
+                    </button>
+                `).join('');
+            }
+            function showView(viewName) {
+                coursePrompt.classList.add('hidden');
+                chatInterface.classList.add('hidden');
+                if (viewName === 'prompt') {
+                    coursePrompt.classList.remove('hidden');
+                    mobileChatTitle.textContent = 'New Chat';
+                } else if (viewName === 'chat') {
+                    chatInterface.classList.remove('hidden');
+                }
+            }
+            function setThinking(isThinking) {
+                state.isThinking = isThinking;
+                chatInput.disabled = isThinking;
+                sendBtn.disabled = isThinking;
+                if (isThinking) {
+                    const typingEl = document.createElement('div');
+                    typingEl.id = 'typing-indicator';
+                    typingEl.classList.add('flex', 'items-center', 'space-x-2', 'p-3', 'rounded-lg', 'bg-theme-secondary', 'max-w-xs', 'md:max-w-md');
+                    typingEl.innerHTML = `
+                        <div class="w-2 h-2 bg-theme-text-secondary rounded-full animate-pulse" style="animation-delay: 0s;"></div>
+                        <div class="w-2 h-2 bg-theme-text-secondary rounded-full animate-pulse" style="animation-delay: 0.2s;"></div>
+                        <div class="w-2 h-2 bg-theme-text-secondary rounded-full animate-pulse" style="animation-delay: 0.4s;"></div>
+                    `;
+                    messageList.appendChild(typingEl);
+                    scrollToBottom();
+                } else {
+                    const typingEl = document.getElementById('typing-indicator');
+                    if (typingEl) { typingEl.remove(); }
+                }
+            }
+            function scrollToBottom() { messageList.scrollTop = messageList.scrollHeight; }
+
+            // --- Chat Logic ---
+            // ... (handleNewChat, handleStartChat, loadChat are identical) ...
+            function handleNewChat() {
+                state.currentChatId = null;
+                courseNameInput.value = '';
+                startChatBtn.disabled = true;
+                showView('prompt');
+                toggleSidebar(false);
+            }
+            function handleStartChat() {
+                const courseName = courseNameInput.value.trim();
+                if (!courseName) return;
+                const newChat = {
+                    id: Date.now().toString(),
+                    courseName: courseName,
+                    messages: [
+                        { sender: 'ai', content: { type: 'markdown', content: `Hi! How can I help you with **${courseName}** today?` } }
+                    ]
+                };
+                state.chatHistory.push(newChat);
+                state.currentChatId = newChat.id;
+                updateChatHistoryUI();
+                loadChat(newChat.id);
+                showView('chat');
+            }
+            function loadChat(chatId) {
+                const chat = state.chatHistory.find(c => c.id === chatId);
+                if (!chat) return;
+                state.currentChatId = chatId;
+                chatTitle.textContent = chat.courseName;
+                mobileChatTitle.textContent = chat.courseName;
+                messageList.innerHTML = '';
+                chat.messages.forEach(appendMessage);
+                showView('chat');
+                toggleSidebar(false);
+            }
+
+            // --- MODIFIED FUNCTION ---
+            // `handleSendMessage` is now `async` to await the fetch call.
+            async function handleSendMessage(e) {
+                e.preventDefault();
+                const text = chatInput.value.trim();
+                if (!text || state.isThinking) return;
+
+                const userMessage = {
+                    sender: 'user',
+                    content: { type: 'markdown', content: text }
+                };
+                
+                // Add user message to state and UI
+                const currentChat = state.chatHistory.find(c => c.id === state.currentChatId);
+                currentChat.messages.push(userMessage);
+                appendMessage(userMessage);
+                
+                chatInput.value = '';
+                setThinking(true);
+
+                try {
+                    // This is the new part: call the backend
+                    const aiMessageContent = await fetchAIResponse(text, currentChat.courseName);
+
+                    // Add AI response to state and UI
+                    const aiMessage = {
+                        sender: 'ai',
+                        content: aiMessageContent
+                    };
+                    currentChat.messages.push(aiMessage);
+                    appendMessage(aiMessage);
+
+                } catch (error) {
+                    console.error("Failed to fetch AI response:", error);
+                    // Use our new error handler
+                    handleAPIError();
+                } finally {
+                    // This ensures 'thinking' stops even if an error occurs
+                    setThinking(false);
+                }
+            }
+
+            // --- NEW FUNCTION ---
+            // This function makes the actual API call to your backend.
+            async function fetchAIResponse(userMessage, courseName) {
+                // This is the URL to your backend endpoint.
+                // You will need to create this endpoint.
+                const API_URL = '/api/chat'; 
+                
+                // We send the message and course name in the format we agreed on.
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: userMessage,
+                        course: courseName
+                        // You could also send the full chat history:
+                        // history: state.chatHistory.find(c => c.id === state.currentChatId).messages
+                    })
+                });
+
+                if (!response.ok) {
+                    // This will be caught by the `catch` block in `handleSendMessage`
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                // We expect the backend to return JSON in the *exact* format
+                // our `render` functions need (e.g., { type: 'quiz', ... })
+                const data = await response.json();
+                return data;
+            }
+
+            // --- NEW FUNCTION ---
+            // A dedicated function to handle API errors.
+            function handleAPIError() {
+                const errorMessage = state.errorMessages[state.errorIndex];
+                state.errorIndex = (state.errorIndex + 1) % state.errorMessages.length;
+
+                const message = {
+                    sender: 'ai',
+                    content: {
+                        type: 'error',
+                        content: errorMessage
+                    }
+                };
+                
+                // Don't save errors to history, just display them
+                appendMessage(message);
+            }
+
+            // --- REMOVED FUNCTION ---
+            // `simulateAIResponse` is no longer needed.
+            // function simulateAIResponse() { ... }
+            
+            // --- REMOVED FUNCTION ---
+            // `simulateError` is replaced by `handleAPIError`.
+            // The error button will be re-wired to call the new function.
+
+            // --- Message Rendering ---
+            // ... (All rendering functions are identical) ...
+            // (appendMessage, renderMarkdown, renderError, renderQuiz, renderFlashcard)
+            function appendMessage(message) {
+                const messageEl = document.createElement('div');
+                messageEl.classList.add('flex', 'w-full');
+                let contentHtml = '';
+                switch (message.content.type) {
+                    case 'markdown': contentHtml = renderMarkdown(message.content.content); break;
+                    case 'quiz': contentHtml = renderQuiz(message.content); break;
+                    case 'flashcard': contentHtml = renderFlashcard(message.content); break;
+                    case 'error': contentHtml = renderError(message.content.content); break;
+                }
+                if (message.sender === 'user') {
+                    messageEl.classList.add('justify-end');
+                    messageEl.innerHTML = `<div class="max-w-xs md:max-w-md lg:max-w-lg p-3 rounded-lg bg-theme-accent-primary text-theme-text-inverse">${contentHtml}</div>`;
+                } else {
+                    messageEl.classList.add('justify-start');
+                    if (message.content.type === 'error') { messageEl.innerHTML = contentHtml; } 
+                    else if (message.content.type === 'quiz' || message.content.type === 'flashcard') { messageEl.innerHTML = `<div class="max-w-xs md:max-w-md lg:max-w-lg w-full">${contentHtml}</div>`; }
+                   else { messageEl.innerHTML = `<div class="max-w-xs md:max-w-md lg:max-w-lg p-3 rounded-lg bg-theme-secondary">${contentHtml}</div>`; }
+                }
+                messageList.appendChild(messageEl);
+                scrollToBottom();
+            }
+            function renderMarkdown(text) { return `<div class="markdown-content">${marked.parse(text || '')}</div>`; }
+            function renderError(text) { return `<div class="max-w-xs md:max-w-md lg:max-w-lg p-3 rounded-lg bg-theme-error-bg border border-theme-error-border text-theme-error-text"><p class="font-medium">Oops, an error occurred:</p><p class="text-sm">${text}</p></div>`; }
+            function renderQuiz(content) {
+                const optionsHtml = content.options.map(option => `<button class="quiz-option w-full text-left p-3 border border-theme-border rounded-lg hover:bg-theme-primary transition-colors" data-answer="${option}" data-correct="${content.correctAnswer}">${option}</button>`).join('');
+                return `<div class="quiz-container bg-theme-secondary p-4 rounded-lg border border-theme-border"><h4 class="font-semibold mb-3 text-theme-text-primary">${content.question}</h4><div class="space-y-2">${optionsHtml}</div><p class="quiz-feedback text-sm mt-3 h-5"></p></div>`;
+            }
+            function renderFlashcard(content) { return `<div class="flashcard w-full h-48" onclick="this.classList.toggle('is-flipped')"><div class="flashcard-inner"><div class="flashcard-front"><span class="text-sm text-theme-text-secondary">${content.front.label}</span><p class="text-lg font-semibold text-center">${content.front.text}</p><span class="text-xs text-theme-text-secondary self-center">Click to flip</span></div><div class="flashcard-back"><span class="text-sm text-theme-text-secondary">${content.back.label}</span><p class="text-base">${content.back.text}</p><span class="text-xs text-theme-text-secondary self-center">Click to flip</span></div></div></div>`; }
+
+
+            // --- Event Handlers ---
+            // ... (Most are identical) ...
+            openMenuBtn.addEventListener('click', () => toggleSidebar(true));
+            closeMenuBtn.addEventListener('click', () => toggleSidebar(false));
+            newChatBtn.addEventListener('click', handleNewChat);
+            courseNameInput.addEventListener('input', () => { startChatBtn.disabled = courseNameInput.value.trim().length === 0; });
+            startChatBtn.addEventListener('click', handleStartChat);
+            chatForm.addEventListener('submit', handleSendMessage);
+            chatHistoryEl.addEventListener('click', (e) => {
+                const chatButton = e.target.closest('button[data-chat-id]');
+                if (chatButton) { loadChat(chatButton.dataset.chatId); }
+            });
+
+            // --- MODIFIED EVENT HANDLER ---
+            // The error button now calls our new API error function directly for testing.
+            triggerErrorBtn.addEventListener('click', () => {
+                if (state.isThinking) return;
+                setThinking(true); // Show thinking...
+                setTimeout(() => { // ...then show error
+                    setThinking(false);
+                    handleAPIError();
+                }, 500);
+            });
+            
+            // --- MODIFIED EVENT HANDLER ---
+            // Quiz delegation logic is now separated for clarity.
+            function handleQuizClick(e) {
+                const option = e.target.closest('.quiz-option');
+                if (!option || option.parentElement.dataset.answered) return;
+                
+                const container = option.closest('.quiz-container');
+                const feedbackEl = container.querySelector('.quiz-feedback');
+                const options = container.querySelectorAll('.quiz-option');
+                
+                container.dataset.answered = 'true'; // Mark as answered
+                
+                const selectedAnswer = option.dataset.answer;
+                const correctAnswer = option.dataset.correct;
+
+                options.forEach(opt => {
+                    opt.disabled = true;
+                    const answer = opt.dataset.answer;
+                    if (answer === correctAnswer) {
+                        opt.classList.add('!bg-green-700', 'text-white', '!border-green-600');
+                    }
+                    if (answer === selectedAnswer && selectedAnswer !== correctAnswer) {
+                        opt.classList.add('!bg-red-700', 'text-white', '!border-red-600');
+                    }
+                });
+
+                if (selectedAnswer === correctAnswer) {
+                    feedbackEl.textContent = 'Correct!';
+                    feedbackEl.classList.add('text-green-400');
+                } else {
+                    feedbackEl.textContent = `Incorrect. The correct answer is: ${correctAnswer}`;
+                    feedbackEl.classList.add('text-red-400');
+                }
+            }
+            messageList.addEventListener('click', handleQuizClick);
+
+            // --- INIT ---
+            handleNewChat(); // Start on the new chat prompt
+            updateChatHistoryUI();
+        });
+    </script>
+</body>
+</html>
