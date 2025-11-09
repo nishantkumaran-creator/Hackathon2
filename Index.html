@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Chat | Scholarly Deep Ocean (Live)</title>
-    <!-- ... (all <style> and <link> tags are identical to the previous file) ... -->
+    <title>AI Chat | Scholarly Deep Ocean</title>
+    <!-- ... (all <style> and <link> tags are identical) ... -->
     <style>
         :root {
             --bg-primary: #0F1A2E;
@@ -22,7 +22,6 @@
             --font-heading: 'Lora', serif;
             --font-body: 'Inter', sans-serif;
         }
-        /* ... (all other styles are identical) ... */
         body { font-family: var(--font-body); background-color: var(--bg-primary); color: var(--text-primary); }
         h1, h2, h3, h4, h5, h6 { font-family: var(--font-heading); font-weight: 500; }
         ::-webkit-scrollbar { width: 6px; }
@@ -73,13 +72,45 @@
 </head>
 <body class="bg-theme-primary text-theme-text-primary antialiased">
 
-    <!-- ... (All HTML for the layout is identical to the previous file) ... -->
-    <div id="app" class="flex h-screen w-full relative overflow-hidden">
+    <!-- NEW: Auth Page Container -->
+    <div id="auth-page" class="w-full h-screen flex items-center justify-center bg-theme-primary p-4">
+        
+        <div class="w-full max-w-sm bg-theme-secondary rounded-lg shadow-xl p-8">
+            <h1 id="auth-title" class="text-3xl font-serif text-center text-theme-text-primary mb-6">Sign In</h1>
+            
+            <form id="auth-form">
+                <div class="space-y-4">
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-theme-text-secondary mb-1">Email</label>
+                        <input type="email" id="email-input" class="w-full px-4 py-2 rounded-lg bg-theme-primary border border-theme-border focus:outline-none focus:ring-2 focus:ring-theme-accent-primary text-theme-text-primary placeholder-theme-text-secondary" placeholder="you@example.com" required autocomplete="email">
+                    </div>
+                     <div>
+                        <label for="password" class="block text-sm font-medium text-theme-text-secondary mb-1">Password</label>
+                        <input type="password" id="password-input" class="w-full px-4 py-2 rounded-lg bg-theme-primary border border-theme-border focus:outline-none focus:ring-2 focus:ring-theme-accent-primary text-theme-text-primary" placeholder="••••••••" required autocomplete="current-password">
+                    </div>
+                    <button id="auth-submit-btn" type="submit" class="w-full bg-theme-accent-primary text-theme-text-inverse font-medium py-2.5 px-4 rounded-lg hover:bg-theme-accent-primary-hover transition-colors flex items-center justify-center disabled:opacity-50">
+                        Sign In
+                    </button>
+                    <p id="auth-error" class="text-sm text-red-400 h-5 text-center"></p>
+                </div>
+            </form>
+
+            <div class="mt-6 text-center">
+                <button id="auth-toggle-btn" class="text-sm text-theme-text-secondary hover:text-theme-text-primary">
+                    Don't have an account? <strong class="text-theme-accent-primary">Sign up</strong>
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- MODIFIED: "app" is now hidden by default -->
+    <div id="app" class="flex h-screen w-full relative overflow-hidden hidden">
         
         <!-- Sidebar -->
         <aside id="sidebar" class="bg-theme-accent w-64 h-full flex flex-col p-4 border-r border-theme-border transition-transform duration-300 ease-in-out -translate-x-full md:translate-x-0 fixed md:static z-20">
-            <!-- ... (Sidebar HTML is identical) ... -->
-             <div class="flex items-center justify-between mb-6">
+            <!-- ... (Sidebar top content is identical) ... -->
+            <div class="flex items-center justify-between mb-6">
                 <button id="new-chat-btn" class="flex items-center justify-center gap-2 w-full bg-theme-accent-primary text-theme-text-inverse font-medium py-2 px-4 rounded-lg hover:bg-theme-accent-primary-hover transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                     New Chat
@@ -96,11 +127,19 @@
             <div id="chat-history" class="flex-1 overflow-y-auto pr-2">
                 <p class="text-sm text-theme-text-secondary">No chats yet.</p>
             </div>
+
+            <!-- Sign Out Button -->
+            <div class="mt-auto pt-4 border-t border-theme-border">
+                <button id="sign-out-btn" class="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-theme-text-secondary hover:bg-theme-secondary hover:text-theme-text-primary transition-colors text-sm">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                    Sign Out
+                </button>
+            </div>
         </aside>
 
         <!-- Main Content Area -->
         <main class="flex-1 h-full flex flex-col">
-            <!-- ... (Main Content HTML is identical) ... -->
+             <!-- ... (Main content HTML is identical) ... -->
              <header class="md:hidden flex items-center justify-between p-4 border-b border-theme-border">
                 <button id="open-menu-btn">
                     <svg class="w-6 h-6 text-theme-text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
@@ -141,6 +180,11 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // --- API Endpoints ---
+            const AUTH_REGISTER_URL = '/api/auth/register'; // Backend provides this
+            const AUTH_LOGIN_URL = '/api/auth/login';       // Backend provides this
+            const CHAT_API_URL = '/api/chat'; 
+
             // --- STATE ---
             const state = {
                 currentChatId: null,
@@ -152,14 +196,26 @@
                     "That... did not work. Second time's the charm? (Please say yes.)",
                     "The hamster running the server just fell off its wheel. Can you give it another spin?"
                 ],
-                
-                // --- REMOVED ---
-                // The `testResponses` array is no longer needed as we'll be fetching live data.
-                // testResponses: [ ... ]
+                isLoginView: true, // Tracks if we're on Login or Register
             };
 
             // --- DOM ELEMENTS ---
-            // ... (All DOM elements are identical) ...
+            
+            // Auth Flow
+            const authPage = document.getElementById('auth-page');
+            const authForm = document.getElementById('auth-form');
+            const authTitle = document.getElementById('auth-title');
+            const emailInput = document.getElementById('email-input');
+            const passwordInput = document.getElementById('password-input');
+            const authSubmitBtn = document.getElementById('auth-submit-btn');
+            const authError = document.getElementById('auth-error');
+            const authToggleBtn = document.getElementById('auth-toggle-btn');
+            
+            // App
+            const app = document.getElementById('app');
+            const signOutBtn = document.getElementById('sign-out-btn');
+
+            // Chat App elements
             const sidebar = document.getElementById('sidebar');
             const openMenuBtn = document.getElementById('open-menu-btn');
             const closeMenuBtn = document.getElementById('close-menu-btn');
@@ -178,10 +234,107 @@
             const chatInput = document.getElementById('chat-input');
             const sendBtn = document.getElementById('send-btn');
 
-            // --- FUNCTIONS ---
+            // --- Auth Functions ---
+
+            function updateAuthView() {
+                authError.textContent = '';
+                emailInput.value = '';
+                passwordInput.value = '';
+
+                if (state.isLoginView) {
+                    authTitle.textContent = 'Sign In';
+                    authSubmitBtn.textContent = 'Sign In';
+                    authToggleBtn.innerHTML = 'Don\'t have an account? <strong class="text-theme-accent-primary">Sign up</strong>';
+                    passwordInput.setAttribute('autocomplete', 'current-password');
+                } else {
+                    authTitle.textContent = 'Create Account';
+                    authSubmitBtn.textContent = 'Sign Up';
+                    authToggleBtn.innerHTML = 'Already have an account? <strong class="text-theme-accent-primary">Sign in</strong>';
+                    passwordInput.setAttribute('autocomplete', 'new-password');
+                }
+            }
+
+            // --- MODIFIED: This now makes the REAL backend call ---
+            async function handleAuthFormSubmit(e) {
+                e.preventDefault();
+                const email = emailInput.value.trim();
+                const password = passwordInput.value.trim();
+                if (!email || !password) {
+                    authError.textContent = 'Please enter both email and password.';
+                    return;
+                }
+
+                authSubmitBtn.disabled = true;
+                authError.textContent = '';
+
+                const url = state.isLoginView ? AUTH_LOGIN_URL : AUTH_REGISTER_URL;
+
+                try {
+                    // --- REAL BACKEND CALL ---
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email, password })
+                    });
+                    
+                    if (!response.ok) {
+                        const errData = await response.json();
+                        throw new Error(errData.detail || 'An error occurred.');
+                    }
+                    
+                    const data = await response.json();
+                    localStorage.setItem('authToken', data.token); // Save the real token
+
+                    // Success! Hide auth, show app.
+                    authPage.classList.add('hidden');
+                    app.classList.remove('hidden');
+                    
+                    // Initialize the chat app state
+                    handleNewChat();
+                    updateChatHistoryUI();
+
+                } catch (error) {
+                    authError.textContent = error.message;
+                } finally {
+                    authSubmitBtn.disabled = false;
+                }
+            }
+            
+            function handleAuthToggle(e) {
+                e.preventDefault();
+                state.isLoginView = !state.isLoginView;
+                updateAuthView();
+            }
+
+            function handleSignOut() {
+                localStorage.removeItem('authToken');
+                state.chatHistory = [];
+                state.currentChatId = null;
+                
+                app.classList.add('hidden');
+                authPage.classList.remove('hidden');
+                
+                if (!state.isLoginView) { // If on register, flip back to login
+                    state.isLoginView = true;
+                }
+                updateAuthView();
+            }
+
+            function checkAuthOnLoad() {
+                const token = localStorage.getItem('authToken');
+                if (token) {
+                    authPage.classList.add('hidden');
+                    app.classList.remove('hidden');
+                    handleNewChat();
+                    updateChatHistoryUI();
+                } else {
+                    authPage.classList.remove('hidden');
+                    app.classList.add('hidden');
+                    updateAuthView();
+                }
+            }
 
             // --- UI & State Functions ---
-            // ... (toggleSidebar, updateChatHistoryUI, showView, setThinking, scrollToBottom are identical) ...
             function toggleSidebar(show) {
                 if (show) { sidebar.classList.remove('-translate-x-full'); } 
                 else { sidebar.classList.add('-translate-x-full'); }
@@ -230,7 +383,6 @@
             function scrollToBottom() { messageList.scrollTop = messageList.scrollHeight; }
 
             // --- Chat Logic ---
-            // ... (handleNewChat, handleStartChat, loadChat are identical) ...
             function handleNewChat() {
                 state.currentChatId = null;
                 courseNameInput.value = '';
@@ -266,8 +418,6 @@
                 toggleSidebar(false);
             }
 
-            // --- MODIFIED FUNCTION ---
-            // `handleSendMessage` is now `async` to await the fetch call.
             async function handleSendMessage(e) {
                 e.preventDefault();
                 const text = chatInput.value.trim();
@@ -278,7 +428,6 @@
                     content: { type: 'markdown', content: text }
                 };
                 
-                // Add user message to state and UI
                 const currentChat = state.chatHistory.find(c => c.id === state.currentChatId);
                 currentChat.messages.push(userMessage);
                 appendMessage(userMessage);
@@ -287,10 +436,7 @@
                 setThinking(true);
 
                 try {
-                    // This is the new part: call the backend
                     const aiMessageContent = await fetchAIResponse(text, currentChat.courseName);
-
-                    // Add AI response to state and UI
                     const aiMessage = {
                         sender: 'ai',
                         content: aiMessageContent
@@ -300,75 +446,58 @@
 
                 } catch (error) {
                     console.error("Failed to fetch AI response:", error);
-                    // Use our new error handler
-                    handleAPIError();
+                    if (error.message !== 'Unauthorized') {
+                        handleAPIError(); // Only show connection errors, not auth errors
+                    }
                 } finally {
-                    // This ensures 'thinking' stops even if an error occurs
                     setThinking(false);
                 }
             }
 
-            // --- NEW FUNCTION ---
-            // This function makes the actual API call to your backend.
+            // --- MODIFIED: This now makes the REAL backend call ---
             async function fetchAIResponse(userMessage, courseName) {
-                // This is the URL to your backend endpoint.
-                // You will need to create this endpoint.
-                const API_URL = '/api/chat'; 
+                const token = localStorage.getItem('authToken');
+                if (!token) {
+                    handleSignOut(); // Boot to login if no token
+                    throw new Error('Unauthorized');
+                }
                 
-                // We send the message and course name in the format we agreed on.
-                const response = await fetch(API_URL, {
+                // --- REAL BACKEND CALL ---
+                const response = await fetch(CHAT_API_URL, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}` // Send the token
                     },
                     body: JSON.stringify({
                         message: userMessage,
                         course: courseName
-                        // You could also send the full chat history:
-                        // history: state.chatHistory.find(c => c.id === state.currentChatId).messages
                     })
                 });
 
                 if (!response.ok) {
-                    // This will be caught by the `catch` block in `handleSendMessage`
+                    if (response.status === 401 || response.status === 403) {
+                        handleSignOut(); // Token is invalid, boot to login
+                        throw new Error('Unauthorized');
+                    }
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
-
-                // We expect the backend to return JSON in the *exact* format
-                // our `render` functions need (e.g., { type: 'quiz', ... })
+                
                 const data = await response.json();
                 return data;
             }
 
-            // --- NEW FUNCTION ---
-            // A dedicated function to handle API errors.
             function handleAPIError() {
                 const errorMessage = state.errorMessages[state.errorIndex];
                 state.errorIndex = (state.errorIndex + 1) % state.errorMessages.length;
-
                 const message = {
                     sender: 'ai',
-                    content: {
-                        type: 'error',
-                        content: errorMessage
-                    }
+                    content: { type: 'error', content: errorMessage }
                 };
-                
-                // Don't save errors to history, just display them
                 appendMessage(message);
             }
 
-            // --- REMOVED FUNCTION ---
-            // `simulateAIResponse` is no longer needed.
-            // function simulateAIResponse() { ... }
-            
-            // --- REMOVED FUNCTION ---
-            // `simulateError` is replaced by `handleAPIError`.
-            // The error button will be re-wired to call the new function.
-
-            // --- Message Rendering ---
-            // ... (All rendering functions are identical) ...
-            // (appendMessage, renderMarkdown, renderError, renderQuiz, renderFlashcard)
+            // --- Message Rendering (Identical) ---
             function appendMessage(message) {
                 const messageEl = document.createElement('div');
                 messageEl.classList.add('flex', 'w-full');
@@ -401,7 +530,14 @@
 
 
             // --- Event Handlers ---
-            // ... (Most are identical) ...
+
+            // NEW: Auth Listeners
+            authForm.addEventListener('submit', handleAuthFormSubmit);
+            authToggleBtn.addEventListener('click', handleAuthToggle);
+            signOutBtn.addEventListener('click', handleSignOut);
+
+
+            // Chat App Listeners
             openMenuBtn.addEventListener('click', () => toggleSidebar(true));
             closeMenuBtn.addEventListener('click', () => toggleSidebar(false));
             newChatBtn.addEventListener('click', handleNewChat);
@@ -413,32 +549,24 @@
                 if (chatButton) { loadChat(chatButton.dataset.chatId); }
             });
 
-            // --- MODIFIED EVENT HANDLER ---
-            // The error button now calls our new API error function directly for testing.
             triggerErrorBtn.addEventListener('click', () => {
                 if (state.isThinking) return;
-                setThinking(true); // Show thinking...
-                setTimeout(() => { // ...then show error
+                setThinking(true);
+                setTimeout(() => {
                     setThinking(false);
                     handleAPIError();
                 }, 500);
             });
             
-            // --- MODIFIED EVENT HANDLER ---
-            // Quiz delegation logic is now separated for clarity.
             function handleQuizClick(e) {
                 const option = e.target.closest('.quiz-option');
                 if (!option || option.parentElement.dataset.answered) return;
-                
                 const container = option.closest('.quiz-container');
                 const feedbackEl = container.querySelector('.quiz-feedback');
                 const options = container.querySelectorAll('.quiz-option');
-                
-                container.dataset.answered = 'true'; // Mark as answered
-                
+                container.dataset.answered = 'true';
                 const selectedAnswer = option.dataset.answer;
                 const correctAnswer = option.dataset.correct;
-
                 options.forEach(opt => {
                     opt.disabled = true;
                     const answer = opt.dataset.answer;
@@ -449,7 +577,6 @@
                         opt.classList.add('!bg-red-700', 'text-white', '!border-red-600');
                     }
                 });
-
                 if (selectedAnswer === correctAnswer) {
                     feedbackEl.textContent = 'Correct!';
                     feedbackEl.classList.add('text-green-400');
@@ -461,8 +588,8 @@
             messageList.addEventListener('click', handleQuizClick);
 
             // --- INIT ---
-            handleNewChat(); // Start on the new chat prompt
-            updateChatHistoryUI();
+            // This function now handles whether to show the app or login page.
+            checkAuthOnLoad();
         });
     </script>
 </body>
